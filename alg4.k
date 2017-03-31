@@ -2,13 +2,15 @@ module ALG4-SYNTAX
 
 syntax MainId ::= "main"   [token]
 syntax Id::= "top"	| "tail" | "head" | "length" | "next" | "key" | "prev" | "NIL" | "left" | "right" | "root" |  "p" | "height" | "value"
-	syntax ReturnVal::=Int | Id | DotId
+
+syntax MyInt ::= Int | "NULL"
+	syntax ReturnVal::= MyInt | Id | DotId
  	syntax DotId::=Id"."DotId
 			  | Id
 			   | "&" Id
 			   | "*" Id
 	syntax Symbol::= FunctionCall
-				> Int | String | Id |DotId
+				> MyInt | String | Id |DotId
  syntax AExp  ::=   String | "read" "(" ")"  
 				 >  AriExp "mod" AriExp              [left, seqstrict]
 				 | AriExp "*" AriExp              [left, seqstrict]
@@ -29,19 +31,19 @@ syntax BExp  ::= Bool
 				 | BExp "or" BExp       [left, strict(1)]
 
   syntax Block ::="{" Stmts "}"
+
   syntax Stmt  ::= Block 
 				  | AExp
-
 				| FunctionCall 
 				 | Param
 				 
-				 | "if"  BExp Stmt "else" Stmt         [strict(1)]
 				 | "if"  BExp Stmt       [strict(1)]
-				  | "if"  BExp Stmt "elseif" BExp Stmt "else" Stmt      [strict(1)]
+				 | "if"  BExp Stmt "elseif" BExp Stmt "else" Stmt      [strict(1, 3)]
+				 > "if"  BExp Stmt "else" Stmt         [strict(1), avoid]
 				 | "while" BExp Stmt
-				 | "return" "("Id "(" AriExp"," AriExp ")"")"  [seqstrict(2,3)]
+			//	 | "return" "("Id "(" AriExp"," AriExp ")"")"  [seqstrict(2,3)]
 				//| "return" "(" FunctionCall")" // [seqstrict(2)]
-				 | "return" "(" ReturnVal ")" [strict]
+				 | "return" "(" AriExp ")" [strict]
 
 				
 			 
@@ -58,7 +60,7 @@ syntax Params::=List{Param, ","}
 //syntax FunctionCall::= Id "(" AriExps ")"  //[seqstrict(2)]
 //syntax FunctionCall::= Id "(" AriExps")" [seqstrict(2)]	
 syntax FunctionCall::= Id "(" AriExp"," AriExp ")" [seqstrict(2,3)]		
-syntax Ints::=List{Int, ","}				 
+syntax MyInts::=List{MyInt, ","}				 
 
 syntax Sep::= "|"
 	syntax MainPgm::=MainId "(" ")" Block	
@@ -93,7 +95,7 @@ endmodule
 module ALG4
   imports ALG4-SYNTAX
  // imports ALG-CONFIGURATION
-   syntax KResult ::= Int | Bool | String
+   syntax KResult ::= MyInt | Bool | String
 
   
   configuration <T color="yellow">
@@ -119,17 +121,17 @@ module ALG4
   
 
   syntax KItem::="(" KItem "," Map ")"
-				//| "(" Map "," Int ")"
-				| "(" Type "," Int ")"
+				//| "(" Map "," MyInt ")"
+				| "(" Type "," MyInt ")"
 			//	| "<" Map ">"
-	syntax Int::= "object" "(" Int ")"
-	             | "&" "object" "(" Int ")"
+	syntax MyInt::= "object" "(" MyInt ")"
+	             | "&" "object" "(" MyInt ")"
 				 | "NULL"
 				  | "<" Map ">"
   rule NIL=> NULL  [macro]
   rule <k>  tree X:Id=>. ...</k>
      <env> M1:Map(.Map=>X:Id|->object(N:Int))</env>
-     <store> M:Map=>M(object(N)|->(height|->0 root|->NULL)) </store>
+     <store> M:Map=>M(object(N:Int)|->(height|->0 root|->NULL)) </store>
 	   <nextLoc>N:Int=>N+Int 1</nextLoc>
 	 
   rule <k> node X:Id=>. ...</k>
@@ -139,81 +141,81 @@ module ALG4
 	
   rule <k> X.root=>I1 ...</k>
        <env> ... X:Id|->object(I:Int) ...</env>
-       <store> ...(object(I)|->(height|->0 root|->I1:Int)) ...</store>
+       <store> ...(object(I)|->(height|->0 root|->I1:MyInt)) ...</store>
 	   //when M=/=K NULL
   
 
   
-  rule <k> X.key=>I1:Int ...</k>
+  rule <k> X.key=>I1:MyInt ...</k>
   <env> ... X:Id|->object(I:Int) ...</env>
-      <store> ... (object(I)|->(value|->I1 left|->I2:Int right|->I3:Int ))...</store>
+      <store> ... (object(I)|->(value|->I1 left|->I2:MyInt right|->I3:MyInt ))...</store>
 	  
 
 		
    rule <k> X.right=>I3 ...</k>
-        <env> ... X:Id|->object(I:Int) ...</env>
-         <store> ... (object(I)|->(value|->I1:Int left|->I2:Int right|->I3:Int))  ...</store>
+        <env> ... X:Id|->object(I:MyInt) ...</env>
+         <store> ... (object(I)|->(value|->I1:MyInt left|->I2:MyInt right|->I3:MyInt))  ...</store>
 		 
    rule <k> X.left=>I2 ...</k>
-        <env> ... X:Id|->object(I:Int) ...</env>
-         <store> ... (object(I)|->(value|->I1:Int left|->I2:Int right|->I3:Int))  ...</store>
+        <env> ... X:Id|->object(I:MyInt) ...</env>
+         <store> ... (object(I)|->(value|->I1:MyInt left|->I2:MyInt right|->I3:MyInt))  ...</store>
   
     
 		 
 	
 		
-   rule <k> X.right=I:Int =>. ...</k>
-	<env> ... X:Id|->object(I1:Int) ...</env>
-	<store> ...(object(I1)|->(value|->I3:Int left|->I2:Int right|->(_=>I)))  ...</store>
+   rule <k> X.right=I:MyInt =>. ...</k>
+	<env> ... X:Id|->object(I1:MyInt) ...</env>
+	<store> ...(object(I1)|->(value|->I3:MyInt left|->I2:MyInt right|->(_=>I)))  ...</store>
 	
 	
-	   rule <k> X.left=I:Int =>. ...</k>
-	<env> ... X:Id|->object(I1:Int) ...</env>
-	<store> ...(object(I1)|->(value|->I3:Int left|->(_=>I) right|->I2:Int))  ...</store>
+	   rule <k> X.left=I:MyInt =>. ...</k>
+	<env> ... X:Id|->object(I1:MyInt) ...</env>
+	<store> ...(object(I1)|->(value|->I3:MyInt left|->(_=>I) right|->I2:MyInt))  ...</store>
 	
 	
 		
- 	rule <k>X.root=I:Int =>. ...</k>
-	     <env> ... X:Id|->object(I1:Int) ...</env>
+ 	rule <k>X.root=I:MyInt =>. ...</k>
+	     <env> ... X:Id|->object(I1:MyInt) ...</env>
 	     <store> ... (object(I1)|->(height|->0 root|->(_=>I)))...</store>
   
   rule <k> X:Id=object(I)=>. ... </k>
-       <env> ... X:Id|->object(I1:Int) ...</env>
+       <env> ... X:Id|->object(I1:MyInt) ...</env>
       <store> ... (object(I)|->K) (object(I1)|->(_=>K))...</store>
 
  rule 	<k> *X=> &object(I) ... </k>
-        <env> ... X:Id|->object(I:Int) ...</env>
+        <env> ... X:Id|->object(I:MyInt) ...</env>
 		
 rule <k> X:Id=&object(I)=>. ... </k>
 
-       <env> ... X:Id|->object(I1:Int) ...</env>
+       <env> ... X:Id|->object(I1:MyInt) ...</env>
 	   <store> ... ((object(I1)|->_)=>.Map) (object(I=>I1)|->_) ...</store>
 	  
 	  
   rule <k> X:Id=NULL=>. ...</k>
-        <env> ... X:Id|->object(I1:Int) ...</env>
+        <env> ... X:Id|->object(I1:MyInt) ...</env>
        <store> ... object(I1)|->(_=>(value|->NULL left|->NULL right|->NULL))...</store>
 	   
 	rule <k>X:Id=>NULL ...</k>
-	<env> ... X:Id|->object(I1:Int) ...</env>
+	<env> ... X:Id|->object(I1:MyInt) ...</env>
 	     <store> ... object(I1)|->(value|->NULL left|->NULL right|->NULL) ...</store>
 		// when object(X) in keys(M)
 		
 		rule <k>X:Id=>object(I1) ...</k>
-		<env> ... X|->object(I1:Int) ...</env>
-	     <store> ... object(I1)|->(value|->I2:Int left|->I3:Int right|->I4:Int) ...</store> 
-		 when I2=/=Int NULL
+		<env> ... X|->object(I1:MyInt) ...</env>
+	     <store> ... object(I1)|->(value|->I2:MyInt left|->I3:MyInt right|->I4:MyInt) ...</store> 
+		 when I2=/=K NULL
 		 
 		 rule <k>X:Id=>object(I1) ...</k>
-		<env> ... X|->object(I1:Int) ...</env>
-	     <store> ... object(I1)|->(height|->0 root|->I2:Int) ...</store> 
+		<env> ... X|->object(I1:MyInt) ...</env>
+	     <store> ... object(I1)|->(height|->0 root|->I2:MyInt) ...</store> 
 		 
-	rule X:Id.p=I:Int=>.	
+	rule X:Id.p=I:MyInt=>.	
 		 
 		 
-	rule <k> X.key=I:Int=>. ...</k>
-	<env> ... X:Id|->object(I1:Int) ...</env>
-	    <store> ... object(I1)|->(value|->(_=>I) left|->I2:Int right|->I3:Int) ...</store>
+	rule <k> X.key=I:MyInt=>. ...</k>
+	<env> ... X:Id|->object(I1:MyInt) ...</env>
+	    <store> ... object(I1)|->(value|->(_=>I) left|->I2:MyInt right|->I3:MyInt) ...</store>
 		 
 	//rule <k> 
   
@@ -224,35 +226,35 @@ syntax KItem ::= mkDecls(Params,AriExps)  [function]
 	
   rule mkDecls(.Params,.AriExps) => .K
 
- /* rule <k>X:Id=>I:Int...</k>
+ /* rule <k>X:Id=>I:MyInt...</k>
 	   <env>...X|->N...</env>
 	   <store>...N|->I...</store>*/
   
  rule <k> int X:Id=>. ...</k>
-        <env> Rho => Rho[X <- !N:Int] </env>
+        <env> Rho => Rho[X <- !N:MyInt] </env>
        <store>... .Map => !N |-> 0 ...</store>
 	
-  /* rule <k>X:Id=>?N1:Int...</k>
-	   <env>Rho=>Rho[X<-!N:Int]</env>
-	   <store>M:Map=>M[!N<-?N1:Int]</store>	
+  /* rule <k>X:Id=>?N1:MyInt...</k>
+	   <env>Rho=>Rho[X<-!N:MyInt]</env>
+	   <store>M:Map=>M[!N<-?N1:MyInt]</store>	
 	   when notBool (X in keys(Rho))*/
 	   
  
   rule I1 - I2 => I1 -Int I2
   rule I1 mod I2 => I1 %Int I2
   
- /*rule <k> X:Id = I:Int => .K ...</k>
+ /*rule <k> X:Id = I:MyInt => .K ...</k>
        <env>... X |-> N ...</env>
        <store>... N |-> (_ => I) ...</store>*/
          
 	  
- /*rule <k>	X:Id = I:Int =>I; ...</k>
-	   <env>Rho=>Rho[X<-!N:Int]</env>
+ /*rule <k>	X:Id = I:MyInt =>I; ...</k>
+	   <env>Rho=>Rho[X<-!N:MyInt]</env>
 	  <store>M:Map=>M[!N<-I]</store>
 	   when notBool (X in keys(Rho))*/
 	   
    rule <k> read() => I ...</k>
-     <in> (ListItem(I:Int) => .List) ...</in>  
+     <in> (ListItem(I:MyInt) => .List) ...</in>  
 	 [read]
 	   
 // BExp
@@ -269,8 +271,8 @@ syntax KItem ::= mkDecls(Params,AriExps)  [function]
   
   
  //Stmt
- syntax KItem::= Int ";"
- rule  _:Int; => .
+ syntax KItem::= MyInt ";"
+ rule  _:MyInt; => .
  //rule ;=>.
  
   rule if true  S else _ => S
@@ -339,7 +341,7 @@ rule delete(M:Map, .Map)=>M
 rule T:Type A1:Id=A2:AriExp =>T A1~>A1=A2
 
 
-rule <k>(F1:Id(A1:Int, A2:Int)~>K) =>(P1:Param=A1~>P2:Param=A2~>Ss)</k>
+rule <k>(F1:Id(A1:MyInt, A2:MyInt)~>K) =>(P1:Param=A1~>P2:Param=A2~>Ss)</k>
 <fstack> .List => ListItem((Env, .Map, K)) ...</fstack>
 	//rule <k>(F1:Id(Vs:AriExps) =>mkDecls(Ps, Vs)~>B)... </k>
      <tid>F</tid>
@@ -349,7 +351,7 @@ rule <k>(F1:Id(A1:Int, A2:Int)~>K) =>(P1:Param=A1~>P2:Param=A2~>Ss)</k>
 	 <env> Env:Map=>.Map </env>
 	 <store> STORE:Map</store>
 	// <gstore>_=>STORE:Map </gstore>
-	 <time>T:Int=>T+Int 1</time>
+	 <time>T:Int =>T+Int 1</time>
 	requires F==K main
 
 /*rule <k>clearEnv=>.K ...</k>
@@ -358,7 +360,7 @@ rule <k>(F1:Id(A1:Int, A2:Int)~>K) =>(P1:Param=A1~>P2:Param=A2~>Ss)</k>
 	 <store>M1:Map=>delete(M1, STORE:Map)</store>*/
 
 /*	rule <k>((F1:Id(Is:AriExps)~>K) =>mkDecls(Ps, Is)~>Ss)</k>
-	//rule <k>(F1:Id(Is:Int) =>mkDecls(Ps, Vs)~>B)... </k>
+	//rule <k>(F1:Id(Is:MyInt) =>mkDecls(Ps, Vs)~>B)... </k>
       <fstack> .List => ListItem((Env, STORE, K)) ...</fstack>
 	 <tid>F</tid>
 	 <fid>_=>F1</fid>
@@ -367,7 +369,7 @@ rule <k>(F1:Id(A1:Int, A2:Int)~>K) =>(P1:Param=A1~>P2:Param=A2~>Ss)</k>
     ...</fun>
 	 <env> Env:Map=>.Map </env>
 	 <store> STORE:Map=>.Map</store>
-	 <time>T:Int=>T+Int 1</time>
+	 <time>T:MyInt=>T+MyInt 1</time>
 	requires F==K main*/
 	
 /*	rule <k>(return (F1:Id(Vs:AriExps))=>mkDecls(Ps, Vs)~>B)...</k>
@@ -375,19 +377,19 @@ rule <k>(F1:Id(A1:Int, A2:Int)~>K) =>(P1:Param=A1~>P2:Param=A2~>Ss)</k>
 	 <fid>_=>F1</fid>
 	 <fun><fun-id>F1</fun-id> <funBody> B</funBody><para>Ps</para></fun>
 	 <env> Env:Map </env>
-	 <time>T:Int=>T+Int 1</time>
+	 <time>T:MyInt=>T+MyInt 1</time>
 	requires F==K main*/
 
-rule <k>(return (F1:Id(A1:Int, A2:Int)))~>_=>F1:Id(A1:Int, A2:Int)~>K</k>
+rule <k>(return (F1:Id(A1:MyInt, A2:MyInt)))~>_=>F1:Id(A1:MyInt, A2:MyInt)~>K</k>
 <env>_=>Env</env>
 //<store> _=>STORE </store>
 	 <fstack> ListItem((Env, STORE:Map, K)) => .List ...</fstack>
 	
 
-	syntax KItem::="tv" "(" Int")" 
+	syntax KItem::="tv" "(" MyInt")" 
 				  | "tv" "(" Id ")"
 	
-rule <k>(return (I:Int))~>_ =>I~>K</k>
+rule <k>(return (I:MyInt))~>_ =>I~>K</k>
   //   <fid>F</fid>
 	 <env>_=>Env</env>
 	// <store> _=>STORE </store>
