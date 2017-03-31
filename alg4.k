@@ -31,8 +31,7 @@ syntax BExp  ::= Bool
   syntax Block ::="{" Stmts "}"
   syntax Stmt  ::= Block 
 				  | AExp
-				// | BExp  
-				//|  Id "(" AriExps")" //[seqstrict(2)]
+
 				| FunctionCall 
 				 | Param
 				 
